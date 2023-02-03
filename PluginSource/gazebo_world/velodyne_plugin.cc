@@ -175,7 +175,7 @@ namespace gazebo
         std::cout << points_coordinates;
         ofstream pointCloud;
         // pointCloud.open("../sensor_data/sensor_data.xyz"); //open is the method of ofstream
-        pointCloud.open("../../teste_open3d/build/sensor_data.xyz"); //open is the method of ofstream
+        pointCloud.open("../../../Assets/Resources/sensor_data.xyz"); //open is the method of ofstream
         pointCloud << points_coordinates;
         pointCloud.close();
         

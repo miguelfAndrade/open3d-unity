@@ -50,5 +50,6 @@ add_library(Open3D::Open3D ALIAS Open3DHelper)
 add_executable(Teste)
 target_sources(Teste PRIVATE Teste.cpp)
 add_library(Teste_lib SHARED Teste.cpp)
-target_link_libraries(Teste PRIVATE Open3D::Open3D)
-target_link_libraries(Teste_lib PRIVATE Open3D::Open3D)
+target_link_libraries(Teste Open3D::Open3D)
+target_link_libraries(Teste_lib Open3D::Open3D)
+

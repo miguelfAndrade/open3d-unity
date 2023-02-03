@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -5,21 +6,28 @@ using System.Runtime.InteropServices;
 
 public class teste : MonoBehaviour
 {
-    [DllImport("libTeste_lib")]
+
+    // [DllImport("libTeste_lib", CallingConvention = CallingConvention.Cdecl)]
     // private static extern bool CreateFile ();
-    private static extern bool pointCloud ();
+    // [DllImport("libTeste_lib", CallingConvention = CallingConvention.Cdecl)]
+    // private static extern int CreateSphere ();
+    [DllImport("libTeste_lib", EntryPoint = "getPC", CallingConvention = CallingConvention.Cdecl)]
+    private static extern int getPC ();
+    
 
     // Start is called before the first frame update
     void Start()
     {
-        // print("Function pointCloud() started!");
-        // print(pointCloud());
-        // print("Function CreateFile() started!");
+        // print("Function getPC() started!");
+        Debug.Log(getPC());
+        // print("Ended!!");
+        // print("Function CreateSphere() started!");
+        // Debug.Log(CreateSphere());
         // print(CreateFile());
 
         // GameObject Model = (GameObject)Resources.Load("model");
-        GameObject Model = (GameObject)Resources.Load("sensor_data");
-        Instantiate(Model);
+        // GameObject Model = (GameObject)Resources.Load("sensor_data");
+        // Instantiate(Model);
     }
 
     // Update is called once per frame
