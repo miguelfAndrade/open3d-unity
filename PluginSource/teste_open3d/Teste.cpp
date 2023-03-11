@@ -2,9 +2,9 @@
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
+#include <utility>
 #include "open3d/Open3D.h"
 
-using namespace std;
 
 #if _MSC_VER // this is defined when compiling with Visual Studio
 #define EXPORT_API __declspec(dllexport) // Visual Studio needs annotating exported functions with this
@@ -13,25 +13,15 @@ using namespace std;
 #endif
 
 // void vizSphere();
-void p();
+void pCloud(std::string pathData, std::string pathOBJ);
 
-int main(int argc, char *argv[]) {    
-    p();
+int main(int argc, char *argv[]) {
+    pCloud("sensor_data.xyz", "sensor_data_obj.obj");
     return 0;
 }
 
 // ------------------------------------------------------------------------
 // Plugin itself
-
-// void vizSphere()
-// {
-//     auto sphere = open3d::geometry::TriangleMesh::CreateSphere(1.0);
-//     sphere->ComputeVertexNormals();
-//     sphere->PaintUniformColor({0.0, 1.0, 0.0});
-//     open3d::visualization::DrawGeometries({sphere});
-//     // return sphere;
-// }
-
 
 // Link following functions C-style (required for plugins)
 extern "C"
@@ -53,77 +43,50 @@ extern "C"
     }
 
     EXPORT_API int getPC() {
-        auto pointSet = open3d::geometry::PointCloud();
-        open3d::io::ReadPointCloudOption options = open3d::io::ReadPointCloudOption("xyz", false, false, false);
-        open3d::io::ReadPointCloudFromXYZ("data/sensor_data.xyz", pointSet, options);                
-        auto vx = pointSet.VoxelDownSample(0.03);
-        auto downpcd = (*vx);
-        // open3d::geometry::KDTreeSearchParam::SearchType searchType = open3d::geometry::KDTreeSearchParam::SearchType::Knn;
-        open3d::geometry::KDTreeSearchParam search = open3d::geometry::KDTreeSearchParamHybrid(0.1, 30);
-        std::cout << "Passou Aqui!" << std::endl;
-        // open3d::geometry::PointCloud::EstimateNormals();
-        downpcd.EstimateNormals(search, false);
-        std::cout << "Passou a funcção EstimateNormals()!" << std::endl;
-        downpcd.OrientNormalsConsistentTangentPlane(50);
-        auto tupleMesh = open3d::geometry::TriangleMesh::CreateFromPointCloudPoisson(downpcd, 9, 0.0f, 1.1f, false, -1);
-        auto mesh = std::get<0>(tupleMesh);
-        bool res = open3d::io::WriteTriangleMesh("Assets/Resources/sensor_data.obj", mesh->ComputeVertexNormals());
+        pCloud("data/sensor_data.xyz", "Assets/Resources/sensor_data.obj");
         return 0;
     }
 } // end of export C block
 
-void p() {
-    auto pointSet = open3d::geometry::PointCloud();
-    open3d::io::ReadPointCloudOption options = open3d::io::ReadPointCloudOption("xyz", false, false, false);
-    open3d::io::ReadPointCloudFromXYZ("sensor_data.xyz", pointSet, options);                
-    auto downpcd = pointSet.VoxelDownSample(0.03);
-    auto search = open3d::geometry::KDTreeSearchParamHybrid(0.1, 30);
-    downpcd->EstimateNormals(search, false);
-    downpcd->OrientNormalsConsistentTangentPlane(50);
-    auto tupleMesh = open3d::geometry::TriangleMesh::CreateFromPointCloudPoisson(*downpcd, 9, 0.0f, 1.1f, false, -1);
+void pCloud(std::string filename, std::string pathOBJ) {
+
+    auto pointSet = std::make_shared<open3d::geometry::PointCloud>(); // Creates an empty Point Cloud
+
+    // Opens the file with the pointcloud data and stores it in the pointSet variable
+    std::ifstream f(filename);
+    if(f.is_open()) {
+        pointSet->Clear();
+        double x, y, z;
+        while (f >> x >> y >> z) {
+            pointSet->points_.push_back(Eigen::Vector3d(x, y, z));
+            //std::cout << std::to_string(x) << "  " << std::to_string(y) << "  " << std::to_string(z) << std::endl;
+        }
+    }
+    f.close();
+
+    auto downSampledPCD = pointSet->VoxelDownSample(0.03);
+    std::cout << "Point Cloud size: " << std::to_string(downSampledPCD->points_.size()) << std::endl;
+    // std::cout << "HOME DIRECTORY: " << open3d::utility::filesystem::GetHomeDirectory() << std::endl;
+    //std::cout << "Passed EstimateNormals function" << std::endl;
+
+    /*
+    for(int i=0; i < downSampledPCD->points_.size(); i++)
+    {
+        double x = downSampledPCD->points_[i].x();
+        double y = downSampledPCD->points_[i].y();
+        double z = downSampledPCD->points_[i].z();
+        std::cout << std::to_string(x) << "  " << std::to_string(y) << "  " << std::to_string(z) << std::endl;
+    }
+    */
+
+    open3d::geometry::KDTreeSearchParam search = open3d::geometry::KDTreeSearchParamKNN(5);
+    (*downSampledPCD).EstimateNormals(search);
+
+    (*downSampledPCD).OrientNormalsConsistentTangentPlane(50);
+    auto tupleMesh = open3d::geometry::TriangleMesh::CreateFromPointCloudPoisson(*downSampledPCD, 9, 0.0f, 1.1f, false, -1);
     auto mesh = std::get<0>(tupleMesh);
-    bool res = open3d::io::WriteTriangleMesh("Assets/Resources/sensor_data.obj", mesh->ComputeVertexNormals());
-    // return 0;
+    //open3d::io::WriteTriangleMesh(pathOBJ, mesh->ComputeVertexNormals());
+
+    mesh->ComputeVertexNormals();
+    open3d::visualization::DrawGeometries({mesh});
 }
-
-// void p() {
-//     auto pointSet = open3d::geometry::PointCloud();
-//     open3d::io::ReadPointCloudOption options = open3d::io::ReadPointCloudOption("xyz", false, false, false);
-//     // open3d::io::ReadPointCloudFromXYZ("Assets/Resources/sensor_data.xyz", pointSet, options);        
-//     open3d::io::ReadPointCloudFromXYZ("sensor_data.xyz", pointSet, options);        
-//     auto downpcd = pointSet.VoxelDownSample(0.03);
-//     // auto search = open3d::geometry::KDTreeSearchParamHybrid(0.1, 30);
-//     auto search = open3d::geometry::KDTreeSearchParamKNN(30);
-//     // auto dist = downpcd->ComputeNearestNeighborDistance();
-//     // auto avg_dist = (dist[0]+dist[1])/2;
-//     // double radius = 3*avg_dist;
-//     // double radius2 = radius*2;
-//     // std::vector<double> vec = {radius, radius2};
-//     downpcd->EstimateNormals(search);
-//     downpcd->OrientNormalsConsistentTangentPlane(50);
-//     // auto mesh = open3d::geometry::TriangleMesh::CreateFromPointCloudBallPivoting(*downpcd, {radius, radius2});
-//     // auto tupleMesh = open3d::geometry::TriangleMesh::CreateFromPointCloudPoisson(*downpcd, 9, 0.0f, 1.1f, false, -1);
-//     // auto filter = open3d::geometry::MeshBase::FilterScope::All;
-//     // mesh->FilterSmoothLaplacian(10, 0.5, filter);
-//     // mesh->FilterSmoothLaplacian(10, 0.5, open3d::geometry::MeshBase::FilterScope::All);
-//     // auto mesh = std::get<0>(tupleMesh);
-//     auto mesh = std::get<0>(open3d::geometry::TriangleMesh::CreateFromPointCloudPoisson(*downpcd, 9, 0.0f, 1.1f, false, -1));
-//     mesh->ComputeVertexNormals();
-//     mesh->PaintUniformColor({0.0, 0.0, 1.0});
-//     open3d::visualization::DrawGeometries({mesh});
-
-//     // std::string path = "Assets/Resources/sensor_data.obj";
-//     // bool res = open3d::io::WriteTriangleMesh("Assets/Resources/sensor_data.obj", mesh->ComputeVertexNormals());
-//     bool res = open3d::io::WriteTriangleMesh("mesh.obj", mesh->ComputeVertexNormals());
-    
-//     // auto box = open3d::geometry::TriangleMesh::CreateBox(1.0, 1.0, 1.0);
-//     // auto set = box->SamplePointsUniformly(20, false);
-//     // open3d::io::WritePointCloudOption options = open3d::io::WritePointCloudOption(true, false);
-//     // auto pointSet = *set.get();
-//     // open3d::io::WritePointCloudToXYZ("pointcloud.xyz", pointSet, options);
-//     // box->ComputeVertexNormals();
-//     // box->PaintUniformColor({0.0, 0.0, 1.0});
-//     // open3d::visualization::DrawGeometries({box});
-//     // vizPointCloud();
-//     // return 0;
-// }

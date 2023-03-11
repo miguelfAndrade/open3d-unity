@@ -1,3 +1,5 @@
 PluginSource/teste_open3d/build/
+PluginSource/teste_open3d/.idea/
+PluginSource/teste_open3d/cmake-build-debug/
 PluginSource/gazebo_world/build/
 Library/

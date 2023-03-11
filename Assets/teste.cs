@@ -12,6 +12,7 @@ public class teste : MonoBehaviour
     // [DllImport("libTeste_lib", CallingConvention = CallingConvention.Cdecl)]
     // private static extern int CreateSphere ();
     [DllImport("libTeste_lib", EntryPoint = "getPC", CallingConvention = CallingConvention.Cdecl)]
+    // [DllImport("libpcl_main_lib", EntryPoint = "getPC", CallingConvention = CallingConvention.Cdecl)]
     private static extern int getPC ();
     
 
